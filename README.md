@@ -10,6 +10,10 @@
 
 - [americas-cup-course] - as a reference for slider based data visualization with d3
 
+### notes
+
+- current version uses v3 of d3, while the last stable is v4
+
 [//]:#
 
 [shk-madgim-server]: <http://https://github.com/SBD580/shk-madgim-server>
