@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <title>MapBox GL JS Offline Example</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <script src="mapbox-gl.js"></script>
-    <link href="mapbox-gl.css" rel="stylesheet" />
+    <script src="lib/mapbox-gl/mapbox-gl.js"></script>
+    <link href="lib/mapbox-gl/mapbox-gl.css" rel="stylesheet" />
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -17,16 +17,17 @@
 			top: 0; left: 0;
 			width: 100%; height: 100%;
 		}
-		path{
-		}
     </style>
-	<script src="d3.min.js"></script>
+	<script src="lib/d3.min.js"></script>
+	<script src="lib/turf.min.js"></script>
 </head>
 <body>
 
 <div id="map"></div>
 <script>
 var STATIC_FILE_BASE_URL = location.origin+location.pathname+'static';
+var NUM_OF_ITEMS = 100;
+var SPEED_FACTOR = 100;
 
 var style = {
   "version": 8,
@@ -74,7 +75,6 @@ var style = {
       },
       "line-opacity":0.8,
     }
-  // rainbow start
   },{
     "id": "country",
     "type": "fill",
@@ -83,110 +83,7 @@ var style = {
     "paint": {
       "fill-color": "#000"
     }
-  }/*,{
-    "id": "area-white",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'ATA'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#F0F8FF"
-    }
   },{
-    "id": "area-white",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'ATA'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#F0F8FF"
-    }
-  },{
-    "id": "area-red",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'AFG','ALD','BEN','BLR','BWA','COK','COL','DNK','DOM','ERI','FIN','FRA','FRO','GIB','GNB','GNQ','GRC','GTM','JPN','KIR','LKA','MHL','MMR','MWI','NCL','OMN','RWA','SMR','SVK','SYR','TCD','TON','URY','WLF'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#fdaf6b"
-    }
-  },{
-    "id": "area-orange",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'AZE','BGD','CHL','CMR','CSI','DEU','DJI','GUY','HUN','IOA','JAM','LBN','LBY','LSO','MDG','MKD','MNG','MRT','NIU','NZL','PCN','PYF','SAU','SHN','STP','TTO','UGA','UZB','ZMB'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#fdc663"
-    }
-  },{
-    "id": "area-yellow",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'AGO','ASM','ATF','BDI','BFA','BGR','BLZ','BRA','CHN','CRI','ESP','HKG','HRV','IDN','IRN','ISR','KNA','LBR','LCA','MAC','MUS','NOR','PLW','POL','PRI','SDN','TUN','UMI','USA','USG','VIR','VUT'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#fae364"
-    }
-  },{
-    "id": "area-green",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'ARE','ARG','BHS','CIV','CLP','DMA','ETH','GAB','GRD','GRL','HMD','IND','IOT','IRL','IRQ','ITA','KOS','LUX','MEX','NAM','NER','PHL','PRT','RUS','SEN','SUR','TZA','VAT'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#d3e46f"
-    }
-  },{
-    "id": "area-turquoise",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'AUT','BEL','BHR','BMU','BRB','CYN','DZA','EST','FLK','GMB','GUM','HND','JEY','KGZ','LIE','MAF','MDA','NGA','NRU','SLB','SOL','SRB','SWZ','THA','TUR','VEN','VGB'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#aadb78"
-    }
-  },{
-    "id": "area-blue",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'AIA','BIH','BLM','BRN','CAF','CHE','COM','CPV','CUB','ECU','ESB','FSM','GAZ','GBR','GEO','KEN','LTU','MAR','MCO','MDV','NFK','NPL','PNG','PRY','QAT','SLE','SPM','SYC','TCA','TKM','TLS','VNM','WEB','WSB','YEM','ZWE'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#a3cec5"
-    }
-  },{
-    "id": "area-purple",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'ABW','ALB','AND','ATC','BOL','COD','CUW','CYM','CYP','EGY','FJI','GGY','IMN','KAB','KAZ','KWT','LAO','MLI','MNP','MSR','MYS','NIC','NLD','PAK','PAN','PRK','ROU','SGS','SVN','SWE','TGO','TWN','VCT','ZAF'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#ceb5cf"
-    }
-  },{
-    "id": "area-pink",
-    "type": "fill",
-    "source": "countries",
-    "filter":["in","ADM0_A3",'ARM','ATG','AUS','BTN','CAN','COG','CZE','GHA','GIN','HTI','ISL','JOR','KHM','KOR','LVA','MLT','MNE','MOZ','PER','SAH','SGP','SLV','SOM','TJK','TUV','UKR','WSM'],
-    "source-layer": "country",
-    "paint": {
-      "fill-color": "#f3c1d3"
-    }
-  // rainbow end
-  },{
-    "id": "geo-lines",
-    "type": "line",
-    "source": "countries",
-    "source-layer": "geo-lines",
-    "paint": {
-      "line-color": "#226688",
-      "line-width": {
-        "stops": [[0,0.2],[4,1]]
-      },
-      "line-dasharray":[6,2]
-    }
-  }*/,{
     "id": "land-border-country",
     "type": "line",
     "source": "countries",
@@ -199,84 +96,7 @@ var style = {
         "stops": [[0,0],[1,0.8],[2,1]]
       }
     }
-  }/*,{
-    "id": "state",
-    "type": "line",
-    "source": "countries",
-    "source-layer": "state",
-    "minzoom": 3,
-    "filter": ["in","ADM0_A3",'USA','CAN','AUS'],
-    "paint": {
-      "line-color": "#fff",
-      "line-opacity": 0.25,
-      "line-dasharray":[6,2,2,2],
-      "line-width": 1.2
-    }
-  // LABELS
-  }/*,{
-    "id": "country-abbrev",
-    "type": "symbol",
-    "source": "countries",
-    "source-layer": "country-name",
-    "minzoom":1.8,
-    "maxzoom":3,
-    "layout": {
-      "text-field": "{ABBREV}",
-      "text-font": ["Open Sans Semibold"],
-      "text-transform": "uppercase",
-      "text-max-width": 20,
-      "text-size": {
-        "stops": [[3,10],[4,11],[5,12],[6,16]]
-      },
-      "text-letter-spacing": {
-        "stops": [[4,0],[5,1],[6,2]]
-      },
-      "text-line-height": {
-        "stops": [[5,1.2],[6,2]]
-      }
-    },
-    "paint": {
-      "text-halo-color": "#fff",
-      "text-halo-width": 1.5
-    }
-  },{
-    "id": "country-name",
-    "type": "symbol",
-    "source": "countries",
-    "source-layer": "country-name",
-    "minzoom":3,
-    "layout": {
-      "text-field": "{NAME}",
-      "text-font": ["Open Sans Semibold"],
-      "text-transform": "uppercase",
-      "text-max-width": 20,
-      "text-size": {
-        "stops": [[3,10],[4,11],[5,12],[6,16]]
-      }
-    },
-    "paint": {
-      "text-halo-color": "#fff",
-      "text-halo-width": 1.5
-    }
-  },{
-    "id": "geo-lines-lables",
-    "type": "symbol",
-    "source": "countries",
-    "source-layer": "geo-lines",
-    "minzoom":1,
-    "layout": {
-      "text-field": "{DISPLAY}",
-      "text-font": ["Open Sans Semibold"],
-      "text-offset": [0,1],
-      "symbol-placement": "line",
-      "symbol-spacing": 600,
-      "text-size": 9
-    },
-    "paint": {
-      "text-color": "#226688",
-      "text-halo-width": 1.5
-    }
-  }*/]
+  }]
 };
 
 var map = new mapboxgl.Map({
@@ -288,21 +108,16 @@ var map = new mapboxgl.Map({
 
 map.addControl(new mapboxgl.Navigation());
 
-
-var projection = function(coords){
-	var p = map.project(new mapboxgl.LngLat(coords.x, coords.y));
-	return p.x+','+p.y;
-}
-	
 var container = map.getCanvasContainer()
 var svg = d3.select(container).append("svg")
 var transform = d3.geo.transform({point: projectPoint});
 var path = d3.geo.path().projection(transform);	
 
 var dots = [];
-for(var i=0;i<100;i++){
-	var pos = {x:-50+Math.random()*100,y:-50+Math.random()*100};
-	var speed = {x:-0.25+Math.random()/2,y:-0.25+Math.random()/2};
+for(var i=0;i<NUM_OF_ITEMS;i++){
+	var loc = [-180+Math.random()*360,-90+Math.random()*180];
+	var angle = -180+Math.random()*360;
+	var speed = 400+Math.random()*300; // m/s
 	
 	var dot = svg.append("path").attr({
 		d: "m25.21488,3.93375c-0.44355,0 -0.84275,0.18332 -1.17933,0.51592c-0.33397,0.33267 -0.61055,0.80884 -0.84275,1.40377c-0.45922,1.18911 -0.74362,2.85964 -0.89755,4.86085c-0.15655,1.99729 -0.18263,4.32223 -0.11741,6.81118c-5.51835,2.26427 -16.7116,6.93857 -17.60916,7.98223c-1.19759,1.38937 -0.81143,2.98095 -0.32874,4.03902l18.39971,-3.74549c0.38616,4.88048 0.94192,9.7138 1.42461,13.50099c-1.80032,0.52703 -5.1609,1.56679 -5.85232,2.21255c-0.95496,0.88711 -0.95496,3.75718 -0.95496,3.75718l7.53,-0.61316c0.17743,1.23545 0.28701,1.95767 0.28701,1.95767l0.01304,0.06557l0.06002,0l0.13829,0l0.0574,0l0.01043,-0.06557c0,0 0.11218,-0.72222 0.28961,-1.95767l7.53164,0.61316c0,0 0,-2.87006 -0.95496,-3.75718c-0.69044,-0.64577 -4.05363,-1.68813 -5.85133,-2.21516c0.48009,-3.77545 1.03061,-8.58921 1.42198,-13.45404l18.18207,3.70115c0.48009,-1.05806 0.86881,-2.64965 -0.32617,-4.03902c-0.88969,-1.03062 -11.81147,-5.60054 -17.39409,-7.89352c0.06524,-2.52287 0.04175,-4.88024 -0.1148,-6.89989l0,-0.00476c-0.15655,-1.99844 -0.44094,-3.6683 -0.90277,-4.8561c-0.22699,-0.59493 -0.50356,-1.07111 -0.83754,-1.40377c-0.33658,-0.3326 -0.73578,-0.51592 -1.18194,-0.51592l0,0l-0.00001,0l0,0z",
@@ -313,28 +128,43 @@ for(var i=0;i<100;i++){
 	
 	dots.push({
 		dot: dot,
-		pos: pos,
+		loc: loc,
 		speed: speed,
-		r: 90+Math.atan2(-speed.y, speed.x) * 180 / Math.PI
+		angle: angle,
+		lastUpdate: Date.now()
 	});
 }
 
 map.on("render", function(){update(false);});
 function update(rand){
 	for(var i=0;i<dots.length;i++){
+		var loc = dots[i].loc;
+		
 		if(rand){
-			dots[i].pos.x += dots[i].speed.x;
-			dots[i].pos.y += dots[i].speed.y;
+			var now = Date.now();
+
+			dots[i].loc = loc = turf.destination(turf.point(loc),dots[i].speed*SPEED_FACTOR*(now-dots[i].lastUpdate)/1000/1000,dots[i].angle,'kilometers').geometry.coordinates;
+			if(loc[0]>=180 || loc[0]<=-180 || loc[1]>=90 || loc[1]<=-90){
+				dots[i].loc = [-180+Math.random()*360,-90+Math.random()*180];
+				dots[i].angle = -180+Math.random()*360;
+				dots[i].speed = 400+Math.random()*300;
+			}
+			
+			dots[i].lastUpdate = now;
 		}
-		dots[i].dot.attr("transform", "translate(" + projection(dots[i].pos) + ") scale(0.3) rotate(" + dots[i].r + ")");
+		
+		var pos = map.project(loc);
+		
+		dots[i].dot.attr("transform", "translate(" + pos.x+','+pos.y + ") scale(0.3) rotate(" + dots[i].angle + ")");
 	}
 }
 
 update();
 
-setInterval(function(){
+requestAnimationFrame(function(){
 	update(true);
-},200);
+	requestAnimationFrame(arguments.callee);
+});
 
 function projectPoint(lon, lat) {
 	var point = map.project(new mapboxgl.LngLat(lon, lat));
