@@ -8,4 +8,4 @@
 
 [//]:#
 
-[shk-madgim-server]: <http://https://github.com/SBD580/shk-madgim-client>
+[shk-madgim-server]: <http://https://github.com/SBD580/shk-madgim-server>
