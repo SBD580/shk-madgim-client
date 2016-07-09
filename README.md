@@ -1,5 +1,9 @@
 # shk-madgim-client
 
+### live version (auto-pull)
+
+http://23.251.132.20/
+
 ### how to use
 
 - clone the repository
