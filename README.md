@@ -13,6 +13,7 @@ http://23.251.132.20/
 ### references
 
 - [americas-cup-course] - as a reference for slider based data visualization with d3
+- [d3.slider](http://sujeetsr.github.io/d3.slider/) - slider implemented in d3 
 
 ### notes
 
