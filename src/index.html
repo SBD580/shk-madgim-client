@@ -5,8 +5,10 @@
     <title>MapBox GL JS Offline Example</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <script src="lib/mapbox-gl/mapbox-gl.js"></script>
+    <script src="lib/jquery-3.0.0.min.js"></script>
     <link href="lib/mapbox-gl/mapbox-gl.css" rel="stylesheet"/>
     <link href="css/map-style.css" rel="stylesheet"/>
+    <link href="css/forms.css" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -41,6 +43,7 @@
     <script src="lib/d3.min.js"></script>
     <script src="lib/d3-queue.min.js"></script>
     <script src="lib/turf.min.js"></script>
+    <script src="forms/forms.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
@@ -49,12 +52,16 @@
     <div class="map-overlay" id="slider"></div>
 </section>
 
-<section>
-    <div id="map"></div>
-</section>
+<div id="map"></div>
+<div class="form">
+    <div class="icon-close">
+        <img src="./images/close.png">
+    </div>
 
-
-
+    <ul>
+        <li>Flight No.</li>
+    </ul>
+</div>
 <!--<div class='map-overlay top'>-->
 <!--<div class='map-overlay-inner'>-->
 <!--<h2>Significant earthquakes in 2015</h2>-->
