@@ -15,9 +15,15 @@
 
         #map {
             position: absolute;
-            top: 0;
+            /*top: 0;*/
             bottom: 0;
             width: 100%;
+            height: 90%;
+        }
+        #slider {
+            position: absolute;
+            top: 0;
+            background-color: #6288A5;
         }
 
         canvas {
@@ -26,7 +32,7 @@
 
         svg {
             position: absolute;
-            top: 0;
+            /*top: 0;*/
             left: 0;
             width: 100%;
             height: 100%;
@@ -35,10 +41,19 @@
     <script src="lib/d3.min.js"></script>
     <script src="lib/d3-queue.min.js"></script>
     <script src="lib/turf.min.js"></script>
+    <script src="app.js"></script>
 </head>
 <body>
 
-<div id="map"></div>
+<section style="background-color: #6288A5">
+    <div class="map-overlay" id="slider"></div>
+</section>
+
+<section>
+    <div id="map"></div>
+</section>
+
+
 
 <!--<div class='map-overlay top'>-->
 <!--<div class='map-overlay-inner'>-->
@@ -49,7 +64,8 @@
 <script>
 
     var STATIC_FILE_BASE_URL = location.origin + location.pathname + 'static';
-    var NUM_OF_ITEMS = 0;
+//var STATIC_FILE_BASE_URL = "23.251.132.20" + location.pathname + 'static';
+    var NUM_OF_ITEMS = 10;
     var SPEED_FACTOR = 100;
 
     var style = {
@@ -129,24 +145,41 @@
         style: style
     });
 
+    // disable map rotation using right click + drag
+    map.dragRotate.disable();
+``
+    // disable map rotation using touch rotation gesture
+//    map.touchZoomRotate.disableRotation();
+
     map.addControl(new mapboxgl.Navigation());
+
+    var sliderContainer = document.getElementById("slider");
+    var sliderSvg = d3.select(sliderContainer).append("svg");
 
     var container = map.getCanvasContainer()
     var svg = d3.select(container).append("svg")
     var transform = d3.geo.transform({point: projectPoint});
     var path = d3.geo.path().projection(transform);
     var track, trail, boat, boats;
+    var i;
+
 
     var width = 970,
             height = 500,
             brushHeight = 60;
-
-    var projection = d3.geo.mercator()
-            .center([-122.429, 37.816])
-            .scale(700000)
-            .translate([width / 2, height / 2 + 30])
-            .clipExtent([[0, 0], [width, height + 1]])
-            .precision(0);
+//
+//                var plainIcon = svg.append("path").attr({
+//                    d: "m25.21488,3.93375c-0.44355,0 -0.84275,0.18332 -1.17933,0.51592c-0.33397,0.33267 -0.61055,0.80884 -0.84275,1.40377c-0.45922,1.18911 -0.74362,2.85964 -0.89755,4.86085c-0.15655,1.99729 -0.18263,4.32223 -0.11741,6.81118c-5.51835,2.26427 -16.7116,6.93857 -17.60916,7.98223c-1.19759,1.38937 -0.81143,2.98095 -0.32874,4.03902l18.39971,-3.74549c0.38616,4.88048 0.94192,9.7138 1.42461,13.50099c-1.80032,0.52703 -5.1609,1.56679 -5.85232,2.21255c-0.95496,0.88711 -0.95496,3.75718 -0.95496,3.75718l7.53,-0.61316c0.17743,1.23545 0.28701,1.95767 0.28701,1.95767l0.01304,0.06557l0.06002,0l0.13829,0l0.0574,0l0.01043,-0.06557c0,0 0.11218,-0.72222 0.28961,-1.95767l7.53164,0.61316c0,0 0,-2.87006 -0.95496,-3.75718c-0.69044,-0.64577 -4.05363,-1.68813 -5.85133,-2.21516c0.48009,-3.77545 1.03061,-8.58921 1.42198,-13.45404l18.18207,3.70115c0.48009,-1.05806 0.86881,-2.64965 -0.32617,-4.03902c-0.88969,-1.03062 -11.81147,-5.60054 -17.39409,-7.89352c0.06524,-2.52287 0.04175,-4.88024 -0.1148,-6.89989l0,-0.00476c-0.15655,-1.99844 -0.44094,-3.6683 -0.90277,-4.8561c-0.22699,-0.59493 -0.50356,-1.07111 -0.83754,-1.40377c-0.33658,-0.3326 -0.73578,-0.51592 -1.18194,-0.51592l0,0l-0.00001,0l0,0z",
+//                    'stroke-width': 0,
+//                    fill: '#226688'
+//                }).append("circle").attr("r", 2);;
+//
+//    var projection = d3.geo.mercator()
+//            .center([-122.429, 37.816])
+//            .scale(700000)
+//            .translate([width / 2, height / 2 + 30])
+//            .clipExtent([[0, 0], [width, height + 1]])
+//            .precision(0);
 
 
     var moving,
@@ -164,6 +197,7 @@
             .range([110, width - 40])
             .clamp(true);
 
+    var data;
     var xTicks = {
         "0": "Start",
         "1404": "USA",
@@ -174,7 +208,7 @@
             .scale(x)
             .orient("bottom")
             .tickFormat(function (t) {
-                return xTicks[t] || formatMinute(t / 60) + " min.";
+                return formatMinute(t / 60) + " min.";
             })
             .tickSize(12, 0)
             .tickPadding(0);
@@ -200,33 +234,37 @@
     function ready(error, usa, nzl) {
 
 
-        for (var i = 0; i < NUM_OF_ITEMS; i++) {
-            var loc = [-180 + Math.random() * 360, -90 + Math.random() * 180];
-            var angle = -180 + Math.random() * 360;
-            var speed = 400 + Math.random() * 300; // m/s
 
-
-            // the plain polygon
-            var plainIcon = svg.append("path").attr({
-                d: "m25.21488,3.93375c-0.44355,0 -0.84275,0.18332 -1.17933,0.51592c-0.33397,0.33267 -0.61055,0.80884 -0.84275,1.40377c-0.45922,1.18911 -0.74362,2.85964 -0.89755,4.86085c-0.15655,1.99729 -0.18263,4.32223 -0.11741,6.81118c-5.51835,2.26427 -16.7116,6.93857 -17.60916,7.98223c-1.19759,1.38937 -0.81143,2.98095 -0.32874,4.03902l18.39971,-3.74549c0.38616,4.88048 0.94192,9.7138 1.42461,13.50099c-1.80032,0.52703 -5.1609,1.56679 -5.85232,2.21255c-0.95496,0.88711 -0.95496,3.75718 -0.95496,3.75718l7.53,-0.61316c0.17743,1.23545 0.28701,1.95767 0.28701,1.95767l0.01304,0.06557l0.06002,0l0.13829,0l0.0574,0l0.01043,-0.06557c0,0 0.11218,-0.72222 0.28961,-1.95767l7.53164,0.61316c0,0 0,-2.87006 -0.95496,-3.75718c-0.69044,-0.64577 -4.05363,-1.68813 -5.85133,-2.21516c0.48009,-3.77545 1.03061,-8.58921 1.42198,-13.45404l18.18207,3.70115c0.48009,-1.05806 0.86881,-2.64965 -0.32617,-4.03902c-0.88969,-1.03062 -11.81147,-5.60054 -17.39409,-7.89352c0.06524,-2.52287 0.04175,-4.88024 -0.1148,-6.89989l0,-0.00476c-0.15655,-1.99844 -0.44094,-3.6683 -0.90277,-4.8561c-0.22699,-0.59493 -0.50356,-1.07111 -0.83754,-1.40377c-0.33658,-0.3326 -0.73578,-0.51592 -1.18194,-0.51592l0,0l-0.00001,0l0,0z",
-                'stroke-width': 0,
-                fill: '#226688'
-            });
-            plainIcon.append("circle").attr("r", 2);
-
-            dots.push({
-                dot: plainIcon,
-                loc: loc,
-                speed: speed,
-                angle: angle,
-                lastUpdate: Date.now()
-            });
-        }
-
-        boats = [
-            {type: "LineString", id: "usa", coordinates: usa},
-            {type: "LineString", id: "nzl", coordinates: nzl}
-        ];
+//
+//        for (var i = 0; i < NUM_OF_ITEMS; i++) {
+//            var loc = [-180 + Math.random() * 360, -90 + Math.random() * 180];
+//            var angle = -180 + Math.random() * 360;
+//            var speed = 400 + Math.random() * 300; // m/s
+//
+//
+//            // the plain polygon
+//            var plainIcon = svg.append("path").attr({
+//                d: "m25.21488,3.93375c-0.44355,0 -0.84275,0.18332 -1.17933,0.51592c-0.33397,0.33267 -0.61055,0.80884 -0.84275,1.40377c-0.45922,1.18911 -0.74362,2.85964 -0.89755,4.86085c-0.15655,1.99729 -0.18263,4.32223 -0.11741,6.81118c-5.51835,2.26427 -16.7116,6.93857 -17.60916,7.98223c-1.19759,1.38937 -0.81143,2.98095 -0.32874,4.03902l18.39971,-3.74549c0.38616,4.88048 0.94192,9.7138 1.42461,13.50099c-1.80032,0.52703 -5.1609,1.56679 -5.85232,2.21255c-0.95496,0.88711 -0.95496,3.75718 -0.95496,3.75718l7.53,-0.61316c0.17743,1.23545 0.28701,1.95767 0.28701,1.95767l0.01304,0.06557l0.06002,0l0.13829,0l0.0574,0l0.01043,-0.06557c0,0 0.11218,-0.72222 0.28961,-1.95767l7.53164,0.61316c0,0 0,-2.87006 -0.95496,-3.75718c-0.69044,-0.64577 -4.05363,-1.68813 -5.85133,-2.21516c0.48009,-3.77545 1.03061,-8.58921 1.42198,-13.45404l18.18207,3.70115c0.48009,-1.05806 0.86881,-2.64965 -0.32617,-4.03902c-0.88969,-1.03062 -11.81147,-5.60054 -17.39409,-7.89352c0.06524,-2.52287 0.04175,-4.88024 -0.1148,-6.89989l0,-0.00476c-0.15655,-1.99844 -0.44094,-3.6683 -0.90277,-4.8561c-0.22699,-0.59493 -0.50356,-1.07111 -0.83754,-1.40377c-0.33658,-0.3326 -0.73578,-0.51592 -1.18194,-0.51592l0,0l-0.00001,0l0,0z",
+//                'stroke-width': 0,
+//                fill: '#226688'
+//            });
+//            plainIcon.append("circle").attr("r", 2);
+//
+//            dots.push({
+//                dot: plainIcon,
+//                loc: loc,
+//                speed: speed,
+//                angle: angle,
+//                lastUpdate: Date.now()
+//            });
+//        }
+//
+//        update(true);
+//
+//        boats = [
+//            {type: "LineString", id: "usa", coordinates: usa},
+//            {type: "LineString", id: "nzl", coordinates: nzl}
+//        ];
 
 //    indexOffset = -usa[0][2]; // offset from time -> index
         indexOffset = 0;
@@ -243,7 +281,7 @@
         xAxis.tickValues(d3.range(0, targetValue, 60 * 5).concat(-180, d3.keys(xTicks)));
 
         // create group for the slider axis and then make the scaling
-        var gX = svg.append("g")
+        var gX = sliderSvg.append("g")
                 .attr("class", "g-x g-axis")
                 .attr("transform", "translate(0," + brushHeight / 2 + ")")
                 .call(xAxis);
@@ -274,7 +312,8 @@
                 });
 
         // create group for slider which will call brush for first time
-        slider = svg.append("g")
+        slider = sliderSvg.append("g")
+                .style("fill", "red")
                 .attr("class", "g-slider")
                 .call(brush);
 
@@ -288,11 +327,11 @@
         handle = slider.append("circle")
                 .attr("class", "g-handle")
                 .attr("transform", "translate(0," + brushHeight / 2 + ")")
-                .attr("r", 8);
+                .attr("r", 8).attr("fill", "red");
 
         // create track pathe object for each boat from the boats[] data
         track = svg.selectAll(".g-track")
-                .data(boats)
+                .data(plainsData)
                 .enter().append("path")
                 .attr("class", function (d) {
                     return "g-track g-track-" + d.id;
@@ -300,7 +339,7 @@
 
         // create little trail path object for each boat from the boats data
         trail = svg.selectAll(".g-trail")
-                .data(boats)
+                .data(plainsData)
                 .enter().append("path")
                 .attr("class", function (d) {
                     return "g-trail g-trail-" + d.id;
@@ -308,14 +347,14 @@
 
         // create boat object for each boat
         boat = svg.selectAll(".g-boat")
-                .data(boats)
+                .data(plainsData.items)
                 .enter().append("g")
                 .attr("class", function (d) {
                     return "g-boat g-boat-" + d.id;
                 })
 
         // add circle to the boat group object
-        // TODO - append the dots object instead of circle in future
+        // TODO - append the plainIcon obj
         boat.append("path").attr({
             d: "m25.21488,3.93375c-0.44355,0 -0.84275,0.18332 -1.17933,0.51592c-0.33397,0.33267 -0.61055,0.80884 -0.84275,1.40377c-0.45922,1.18911 -0.74362,2.85964 -0.89755,4.86085c-0.15655,1.99729 -0.18263,4.32223 -0.11741,6.81118c-5.51835,2.26427 -16.7116,6.93857 -17.60916,7.98223c-1.19759,1.38937 -0.81143,2.98095 -0.32874,4.03902l18.39971,-3.74549c0.38616,4.88048 0.94192,9.7138 1.42461,13.50099c-1.80032,0.52703 -5.1609,1.56679 -5.85232,2.21255c-0.95496,0.88711 -0.95496,3.75718 -0.95496,3.75718l7.53,-0.61316c0.17743,1.23545 0.28701,1.95767 0.28701,1.95767l0.01304,0.06557l0.06002,0l0.13829,0l0.0574,0l0.01043,-0.06557c0,0 0.11218,-0.72222 0.28961,-1.95767l7.53164,0.61316c0,0 0,-2.87006 -0.95496,-3.75718c-0.69044,-0.64577 -4.05363,-1.68813 -5.85133,-2.21516c0.48009,-3.77545 1.03061,-8.58921 1.42198,-13.45404l18.18207,3.70115c0.48009,-1.05806 0.86881,-2.64965 -0.32617,-4.03902c-0.88969,-1.03062 -11.81147,-5.60054 -17.39409,-7.89352c0.06524,-2.52287 0.04175,-4.88024 -0.1148,-6.89989l0,-0.00476c-0.15655,-1.99844 -0.44094,-3.6683 -0.90277,-4.8561c-0.22699,-0.59493 -0.50356,-1.07111 -0.83754,-1.40377c-0.33658,-0.3326 -0.73578,-0.51592 -1.18194,-0.51592l0,0l-0.00001,0l0,0z",
             'stroke-width': 0,
@@ -340,43 +379,69 @@
 
     map.on("render", function () {
         update(false);
+        updateProjection();
     });
+
+    function updateProjection(){
+
+        if(typeof boat != 'undefined') {
+            // move the boat by transform
+            // TODO - make with map projection
+            boat.attr("transform", function (d) {
+                // in case the plain path is over
+                if (d.path.coordinates.length <= i) {
+                    // TODO - remove d.id from data
+                    return;
+                }
+                var loc = [d.path.coordinates[i][0], d.path.coordinates[i][1]];
+                pos = map.project(loc);
+                return "translate(" + pos.x + "," + pos.y + ")";
+            });
+        }
+    };
 
     /*
      called when slider moved
      */
     function brushed() {
-        if (d3.event.sourceEvent) { // not a programmatic event
-            if (d3.event.sourceEvent.target.parentNode === this) { // clicked on the brush
-                targetValue = x.invert(d3.mouse(this)[0]);
-                move();
-            }
-        } else {
-
+//        if (d3.event.sourceEvent) { // not a programmatic event
+//            if (d3.event.sourceEvent.target.parentNode === this) { // clicked on the brush
+//                targetValue = x.invert(d3.mouse(this)[0]);
+//                move();
+//            }
+//        } else {
+            update();
             currentValue = brush.extent()[0];
             handle.attr("cx", x(currentValue));
-            var i = Math.round(currentValue) + indexOffset;
+            i = Math.round(currentValue) + indexOffset;
 
             // move the boat by transform
             // TODO - make with map projection
             boat.attr("transform", function (d) {
-                return "translate(" + projection([d.coordinates[i].x, d.coordinates[i].y]) + ")";
+                // in case the plain path is over
+                if (d.path.coordinates.length <= i){
+                    // TODO - remove d.id from data
+                    return;
+                }
+                var loc = [d.path.coordinates[i][0], d.path.coordinates[i][1]];
+                pos = map.project(loc);
+                return "translate(" + pos.x +"," + pos.y +  ")";
             });
 
-            // set the track to be path of the boat's coordinates from 0 position to i (the slider value)
-            track.attr("d", function (d) {
-                return path({type: "LineString", coordinates: d.coordinates.slice(0, i + 1)});
-            });
+//            // set the track to be path of the boat's coordinates from 0 position to i (the slider value)
+//            track.attr("d", function (d) {
+//                return path({type: "LineString", coordinates: d.coordinates.slice(0, i + 1)});
+//            });
+//
+//            // set the trail path to be the boat's coordinates from i+1 (the slider value to the trail lentgh was decided
+//            trail.attr("d", function (d) {
+//                return path({
+//                    type: "LineString",
+//                    coordinates: d.coordinates.slice(Math.max(0, i - trailLength), i + 1)
+//                });
+//            });
 
-            // set the trail path to be the boat's coordinates from i+1 (the slider value to the trail lentgh was decided
-            trail.attr("d", function (d) {
-                return path({
-                    type: "LineString",
-                    coordinates: d.coordinates.slice(Math.max(0, i - trailLength), i + 1)
-                });
-            });
-
-        }
+//        }
     }
 
     /* called on slider interrupt when it is not programatic event - not sure what it is */
@@ -450,73 +515,6 @@
         this.stream.point(point.x, point.y);
     }
 
-
-    /*
-     the brush which call to brush func
-     */
-
-    //var brush = d3.svg.brush()
-    //        .x(x)
-    //        .extent([0, 0])
-    //        .on("brush", brushed);
-    //
-    //var x = d3.scale.linear()
-    //        .range([110, width - 40])
-    //        .clamp(true);
-    //
-    //var gX = svg.append("g")
-    //        .attr("class", "g-x g-axis")
-    //        .attr("transform", "translate(0," + SLIDER_HEIGHT / 2 + ")")
-    //        .call(xAxis);
-    //
-    //gX.select(".domain")
-    //        .select(function() { return this.parentNode.insertBefore(this.cloneNode(true), this); })
-    //        .attr("class", "g-halo");
-    //
-    //var tick = gX.selectAll(".tick")
-    //        .each(function() { this.parentNode.appendChild(this); });
-    //
-    //tick.select("line")
-    //        .attr("y1", -8)
-    //        .attr("y2", 8);
-    //
-    //tick.filter(function(d) { return d in xTicks; })
-    //        .attr("class", function(d) { return "tick tick-special tick-" + xTicks[d].toLowerCase(); });
-    //
-    //slider = svg.append("g")
-    //        .attr("class", "g-slider")
-    //        .call(brush);
-    //
-    //slider.selectAll(".extent,.resize")
-    //        .remove();
-    //
-    //slider.select(".background")
-    //        .attr("height", SLIDER_HEIGHT);
-    //
-    //handle = slider.append("circle")
-    //        .attr("class", "g-handle")
-    //        .attr("transform", "translate(0," + SLIDER_HEIGHT/ 2 + ")")
-    //        .attr("r", 8);
-
-    //function brushed() {
-    //    if (d3.event.sourceEvent) { // not a programmatic event
-    //        if (d3.event.sourceEvent.target.parentNode === this) { // clicked on the brush
-    //            playButton.text("Play");
-    //            targetValue = x.invert(d3.mouse(this)[0]);
-    //            move();
-    //        }
-    //    } else {
-    //        currentValue = brush.extent()[0];
-    //        handle.attr("cx", x(currentValue));
-    //        var i = Math.round(currentValue) + indexOffset;
-    //        gate.classed("g-course-crossed", function(d) { return currentValue >= d.properties.time; });
-    //        boat.attr("transform", function(d) { return "translate(" + projection(d.coordinates[i]) + ")"; });
-    //        track.attr("d", function(d) { return path({type: "LineString", coordinates: d.coordinates.slice(0, i + 1)}); });
-    //        trail.attr("d", function(d) { return path({type: "LineString", coordinates: d.coordinates.slice(Math.max(0, i - trailLength), i + 1)}); });
-    //        wind.select(".g-speed").text(function(d) { return windFormat(d[i][3]) + " knots"; });
-    //        compass.attr("transform", function(d) { return "rotate(" + (180 + d[i][4]) + ")"; });
-    //    }
-    //}
 
 </script>
 
