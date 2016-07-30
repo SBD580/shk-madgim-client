@@ -62,7 +62,7 @@
                             },
                             'item': {
                                 type: 'geojson',
-                                data: null
+                                data: turf.lineString([[]])
                             }
                         },
                         "glyphs": STATIC_FILE_BASE_URL + "/font/{fontstack}/{range}.pbf",
@@ -180,10 +180,10 @@
 <div class="ui hidden divider"></div>
 <div class="ui container">
     <div class="ui pointing secondary menu" id="tabs">
-        <a class="item" data-tab="availability">Availability</a>
-        <a class="item active" data-tab="search">Search</a>
+        <a class="item active" data-tab="availability">Availability</a>
+        <a class="item" data-tab="search">Search</a>
     </div>
-    <div class="ui tab fluid container" data-tab="availability">
+    <div class="ui tab fluid active container" data-tab="availability">
         <div class="ui grid">
             <div class="three wide column">
                 <div class="ui fluid mini vertical accordion menu">
@@ -281,7 +281,7 @@
             </div>
         </div>
     </div>
-    <div class="ui tab fluid container active" data-tab="search" ng-controller="SearchController as ctrl">
+    <div class="ui tab fluid container" data-tab="search" ng-controller="SearchController as ctrl">
         <div class="ui grid">
             <div class="six wide column">
                 <div id="search-map"></div>
@@ -298,7 +298,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr class="center aligned" ng-repeat="result in results" ng-class="{active:ctrl.result==result}" ng-click="ctrl.result=result">
+                    <tr class="center aligned" ng-repeat="result in results" ng-class="{active:ctrl.result==result}" ng-mouseover="ctrl.result=result">
                         <td>{{result.src?'R':'T'}}</td>
                         <td>{{result.startTime.format()}}</td>
                         <td>{{result.endTime.format()}}</td>
