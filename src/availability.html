@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="shk">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="lib/rickshaw.min.css"/>
+    <script src="lib/jquery-3.0.0.min.js"></script>
+    <script src="lib/lodash.min.js"></script>
+    <script src="lib/turf.min.js"></script>
+    <script src="lib/moment.min.js"></script>
+    <script src="lib/d3.min.js"></script>
+    <script src="lib/mapbox-gl/mapbox-gl.js"></script>
+
+    <script src="lib/angular.min.js"></script>
+
+    <link rel="stylesheet" href="lib/cal-heatmap.css"/>
+    <script src="lib/cal-heatmap.min.js"></script>
+
+    <link rel="stylesheet" href="lib/semantic.min.css"/>
+    <script src="lib/semantic.min.js"></script>
+
+    <style>
+        .cal-heatmap-container .subdomain-text {
+            fill: #000;
+        }
+
+        .cal-heatmap-container .r1 + title + .subdomain-text,
+        .cal-heatmap-container .r2 + title + .subdomain-text,
+        .cal-heatmap-container .r3 + title + .subdomain-text,
+        .cal-heatmap-container .r4 + title + .subdomain-text,
+        .cal-heatmap-container .r5 + title + .subdomain-text,
+        .cal-heatmap-container .r6 + title + .subdomain-text {
+            fill: #fff;
+        }
+
+        #search-map {
+            height: 400px;
+        }
+    </style>
+    <script>
+        var SERVER_BASE_URL = location.origin;
+
+        var app = angular.module('shk', []);
+
+        app.controller('SearchController', function ($scope, $timeout, $http) {
+            var ctrl = this;
+
+            var STATIC_FILE_BASE_URL = SERVER_BASE_URL + '/static';
+
+            $timeout(function () {
+                var map = new mapboxgl.Map({
+                    container: 'search-map',
+                    center: [8.3221, 46.5928],
+                    zoom: 1,
+                    style: {
+                        "version": 8,
+                        "sources": {
+                            "countries": {
+                                "type": "vector",
+                                "tiles": [STATIC_FILE_BASE_URL + "/countries/{z}/{x}/{y}.pbf"],
+                                "maxzoom": 6
+                            },
+                            'item': {
+                                type: 'geojson',
+                                data: null
+                            }
+                        },
+                        "glyphs": STATIC_FILE_BASE_URL + "/font/{fontstack}/{range}.pbf",
+                        "layers": [{
+                            "id": "background",
+                            "type": "background",
+                            "paint": {
+                                "background-color": "#00001E"
+                            }
+                        }, {
+                            "id": "country",
+                            "type": "fill",
+                            "source": "countries",
+                            "source-layer": "country",
+                            "paint": {
+                                "fill-color": "#000"
+                            }
+                        }, {
+                            "id": "country-fill",
+                            "type": "fill",
+                            "source": "countries",
+                            "source-layer": "country",
+                            "paint": {
+                                "fill-color": "#fff",
+                                "fill-opacity": 0.5
+                            },
+                            "filter": ["==", "NAME", ""]
+                        }, {
+                            "id": "country-lines",
+                            "type": "line",
+                            "source": "countries",
+                            "source-layer": "country",
+                            "layout": {
+                                "line-join": "round"
+                            },
+                            "paint": {
+                                "line-color": "#fff",
+                                "line-width": 1,
+                                "line-opacity": 0.5
+                            }
+                        },{
+                            'id': 'item',
+                            'type': 'line',
+                            'source': 'item',
+                            'paint': {
+                                "line-color": "red",
+                                "line-width": 1
+                            }
+                        }]
+                    }
+                });
+
+                map.dragRotate.disable();
+                map.on("mousemove", function (e) {
+                    var features = map.queryRenderedFeatures(e.point, {layers: ["country"]});
+                    if (features.length) {
+                        map.setFilter("country-fill", ['any', ["==", "NAME", ctrl.polygon ? ctrl.polygon.properties.NAME : ''], ["==", "NAME", features[0].properties.NAME]]);
+                    } else {
+                        map.setFilter("country-fill", ["==", "NAME", ctrl.polygon ? ctrl.polygon.properties.NAME : '']);
+                    }
+                });
+                map.on('click', function (e) {
+                    var features = map.queryRenderedFeatures(e.point, {layers: ["country"]});
+                    if (features.length) {
+                        $scope.$apply(function () {
+                            ctrl.polygon = features[0];
+                        });
+                        map.setFilter("country-fill", ["==", "NAME", features[0].properties.NAME]);
+                    }
+                });
+                map.on("mouseout", function () {
+                    map.setFilter("country-fill", ["==", "NAME", ctrl.polygon ? ctrl.polygon.properties.NAME : '']);
+                });
+
+                $scope.$watch('ctrl.result',function(){
+                    var itemSource = map.getSource('item');
+                    if(itemSource)
+                        itemSource.setData(turf.lineString(ctrl.result?ctrl.result.path.coordinates:[[]]));
+                });
+            }, 0);
+
+            $scope.$watch('ctrl.polygon', function () {
+                if (ctrl.polygon) {
+                    $scope.loading = true;
+                    $scope.error = null;
+                    ctrl.result = null;
+
+                    $http({
+                        url: SERVER_BASE_URL + '/search',
+                        method: 'POST',
+                        data: {
+                            shape: ctrl.polygon.geometry
+                        },
+                        responseType: 'json'
+                    }).then(function (res) {
+                        res.data.results.forEach(function (result) {
+                            result.startTime = moment.unix(result.startTime);
+                            result.endTime = moment.unix(result.endTime);
+                        });
+                        $scope.results = res.data.results;
+                        $scope.total = res.data.total;
+                    }).catch(function (err) {
+                        $scope.error = err;
+                        $scope.results = null;
+                        $scope.tatal = 0;
+                    }).finally(function(){
+                        $scope.loading = false;
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="ui hidden divider"></div>
+<div class="ui container">
+    <div class="ui pointing secondary menu" id="tabs">
+        <a class="item" data-tab="availability">Availability</a>
+        <a class="item active" data-tab="search">Search</a>
+    </div>
+    <div class="ui tab fluid container" data-tab="availability">
+        <div class="ui grid">
+            <div class="three wide column">
+                <div class="ui fluid mini vertical accordion menu">
+                    <div class="item">
+                        <div class="ui checked checkbox">
+                            <input type="checkbox" checked="" value="T">
+                            <label>T</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <a class="title">
+                            <i class="dropdown icon"></i>
+                            <div class="ui checked checkbox">
+                                <input type="checkbox" checked="">
+                                <label><b>Group A</b></label>
+                            </div>
+                        </a>
+                        <div class="content">
+                            <div class="ui form">
+                                <div class="grouped fields">
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs1">
+                                            <label>RS1</label>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs2">
+                                            <label>RS2</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <a class="title">
+                            <i class="dropdown icon"></i>
+                            <div class="ui checked checkbox">
+                                <input type="checkbox" checked="">
+                                <label><b>Group B</b></label>
+                            </div>
+                        </a>
+                        <div class="content">
+                            <div class="ui form">
+                                <div class="grouped fields">
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs3">
+                                            <label>RS3</label>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs4">
+                                            <label>RS4</label>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs5">
+                                            <label>RS5</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <a class="title">
+                            <i class="dropdown icon"></i>
+                            <div class="ui checked checkbox">
+                                <input type="checkbox" checked="">
+                                <label><b>Group C</b></label>
+                            </div>
+                        </a>
+                        <div class="content">
+                            <div class="ui form">
+                                <div class="grouped fields">
+                                    <div class="field">
+                                        <div class="ui checked checkbox">
+                                            <input type="checkbox" checked="" value="rs6">
+                                            <label>RS6</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="threeteen wide column">
+                <div id="chart"></div>
+            </div>
+        </div>
+    </div>
+    <div class="ui tab fluid container active" data-tab="search" ng-controller="SearchController as ctrl">
+        <div class="ui grid">
+            <div class="six wide column">
+                <div id="search-map"></div>
+                <h4 class="ui header">{{ctrl.polygon.properties.NAME}}</h4>
+            </div>
+            <div class="ten wide column">
+                <div class="ui inverted dimmer" ng-class="{active:loading}"><div class="ui loader"></div></div>
+                <table class="ui selectable very basic celled table">
+                    <thead>
+                    <tr class="center aligned">
+                        <th>Type</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="center aligned" ng-repeat="result in results" ng-class="{active:ctrl.result==result}" ng-click="ctrl.result=result">
+                        <td>{{result.src?'R':'T'}}</td>
+                        <td>{{result.startTime.format()}}</td>
+                        <td>{{result.endTime.format()}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="ui message" ng-show="results">displaying {{results.length}} results out of {{total}}</div>
+                <div class="ui negative message" ng-show="error">ERROR</div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $('.ui.accordion').accordion();
+    $('#tabs .item').tab();
+
+    $.ajax(SERVER_BASE_URL + '/availability/86400s').done(function (availability) {
+        //availability = _.sortBy(availability, _.property('time'));
+
+        var cal = new CalHeatMap();
+        cal.init({
+            itemSelector: "#chart",
+            domain: "month",
+            subDomain: "day",
+            cellSize: 30,
+            subDomainTextFormat: "%d",
+            range: 4,
+            start: new Date(new Date().getFullYear(), 4, 1),
+            rowLimit: 6,
+            domainMargin: 0,
+            domainGutter: 30,
+            legend: [20, 40, 60, 80, 100],
+            legendColors: ["#B3C073", "#636B3F"],
+            displayLegend: false,
+            label: {
+                height: 30
+            }
+        });
+
+        function refreshData() {
+            var sources = $(':checkbox:checked').map(function () {
+                return $(this).val();
+            }).toArray();
+
+            var data = _.mapValues(_.keyBy(_.filter(availability, function (r) {
+                return _.intersection(_.keys(r.stats), sources).length;
+            }), _.property('time')), function (r) {
+                return _.reduce(r.stats, function (sum, x, src) {
+                    return sum + (sources.indexOf(src) >= 0 ? x.count : 0);
+                }, 0);
+            });
+            console.log(data);
+
+            cal.update(data, false);
+        }
+
+        refreshData();
+
+        $('.title :checkbox').click(function (e) {
+            e.stopPropagation();
+        }).change(function () {
+            $(this).parents('.title').next('.content').find(':checkbox').prop('checked', $(this).is(':checked'));
+        })
+        $(':checkbox').change(refreshData);
+    });
+</script>
+</body>
+</html>
