@@ -2,9 +2,9 @@
  * Created by Yarden on 7/17/2016.
  */
 var isPlaying = false;
-var startTime = 1468634054; // TODO - get start time from user
-var endTime = 1468640447; // TODO - get end time from user 
-var tickNum = 10;
+var startTime = 1469880212; // TODO - get start time from user
+var endTime = 1470052737; // TODO - get end time from user
+var tickNum = 10; // the step lenght of the player
 // var sliderValue = startTime;
  
 
