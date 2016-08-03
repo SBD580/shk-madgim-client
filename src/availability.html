@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title></title>
-    <link rel="stylesheet" href="lib/rickshaw.min.css"/>
     <script src="lib/jquery-3.0.0.min.js"></script>
     <script src="lib/lodash.min.js"></script>
     <script src="lib/turf.min.js"></script>
@@ -35,6 +34,19 @@
 
         #search-map {
             height: 400px;
+        }
+        #availability-daily .graph-subdomain-group g:not(:nth-child(15n+1)){
+            display: none;
+        }
+        #availability-daily .cal-heatmap-container{
+            height: 50px;
+        }
+        .cal-heatmap-container rect.highlight{
+            stroke: red !important;
+            stroke-width: 1px;
+        }
+        .cal-heatmap-container text.highlight{
+            fill: red !important;
         }
     </style>
     <script>
@@ -277,7 +289,8 @@
                 </div>
             </div>
             <div class="threeteen wide column">
-                <div id="chart"></div>
+                <div id="availability-monthly"></div>
+                <div id="availability-daily"></div>
             </div>
         </div>
     </div>
@@ -312,58 +325,114 @@
     </div>
 </div>
 <script>
+    var DAILIES = 3;
     $('.ui.accordion').accordion();
     $('#tabs .item').tab();
 
-    $.ajax(SERVER_BASE_URL + '/availability/86400s').done(function (availability) {
-        //availability = _.sortBy(availability, _.property('time'));
+    $('.title :checkbox').click(function (e) {
+        e.stopPropagation();
+    }).change(function () {
+        $(this).parents('.title').next('.content').find(':checkbox').prop('checked', $(this).is(':checked'));
+    });
 
-        var cal = new CalHeatMap();
-        cal.init({
-            itemSelector: "#chart",
-            domain: "month",
-            subDomain: "day",
-            cellSize: 30,
-            subDomainTextFormat: "%d",
-            range: 4,
-            start: new Date(new Date().getFullYear(), 4, 1),
-            rowLimit: 6,
+    var selectedDate, monthlyAvailability, dailyAvailability;
+
+    var dailies = [];
+    for(var i=0;i<DAILIES;i++) {
+        var daily = new CalHeatMap();
+        daily.init({
+            itemSelector: "#availability-daily",
+            domain: "hour",
+            subDomain: "min",
+            cellSize: 21,
+            subDomainTextFormat: "%M",
+            range: 24/DAILIES,
+            start: new Date(),
+            rowLimit: 15,
             domainMargin: 0,
-            domainGutter: 30,
+            domainGutter: 10,
             legend: [20, 40, 60, 80, 100],
             legendColors: ["#B3C073", "#636B3F"],
             displayLegend: false,
             label: {
-                height: 30
+                height: 20,
+                position: 'top'
             }
         });
+        dailies.push(daily);
+    }
 
-        function refreshData() {
-            var sources = $(':checkbox:checked').map(function () {
-                return $(this).val();
-            }).toArray();
+    var monthly = new CalHeatMap();
+    monthly.init({
+        itemSelector: "#availability-monthly",
+        domain: "month",
+        subDomain: "day",
+        cellSize: 30,
+        subDomainTextFormat: "%d",
+        range: 4,
+        start: new Date(new Date().getFullYear(), 4, 1),
+        rowLimit: 6,
+        domainMargin: 0,
+        domainGutter: 30,
+        legend: [20, 40, 60, 80, 100],
+        legendColors: ["#B3C073", "#636B3F"],
+        displayLegend: false,
+        label: {
+            height: 30
+        },
+        onClick: function(date,nb){
+            selectedDate = date;
+            monthly.highlight(date);
 
-            var data = _.mapValues(_.keyBy(_.filter(availability, function (r) {
-                return _.intersection(_.keys(r.stats), sources).length;
-            }), _.property('time')), function (r) {
-                return _.reduce(r.stats, function (sum, x, src) {
-                    return sum + (sources.indexOf(src) >= 0 ? x.count : 0);
-                }, 0);
+            getDailyAvailability(date).then(function(availability){
+                dailyAvailability = availability;
+                updateDailies();
             });
-            console.log(data);
-
-            cal.update(data, false);
         }
-
-        refreshData();
-
-        $('.title :checkbox').click(function (e) {
-            e.stopPropagation();
-        }).change(function () {
-            $(this).parents('.title').next('.content').find(':checkbox').prop('checked', $(this).is(':checked'));
-        })
-        $(':checkbox').change(refreshData);
     });
+
+    getMonthlyAvailability().then(function(availability){
+        monthlyAvailability = availability;
+        monthly.update(updateAvailabilityBySources(monthlyAvailability),false);
+    });
+
+    $(':checkbox').change(function(){
+        monthly.update(updateAvailabilityBySources(monthlyAvailability),false);
+        updateDailies();
+    });
+
+    function updateDailies(date){
+        var availability = updateAvailabilityBySources(dailyAvailability);
+        dailies.forEach(function(daily,i){
+            daily.options.data = availability;
+            daily.options.start = new Date(selectedDate.getTime()+i*24/DAILIES*60*60*1000);
+            daily.rewind();
+        });
+    }
+
+    function updateAvailabilityBySources(availability) {
+        var sources = $(':checkbox:checked').map(function () {
+            return $(this).val();
+        }).toArray();
+
+        var data = _.mapValues(_.keyBy(_.filter(availability, function (r) {
+            return _.intersection(_.keys(r.stats), sources).length;
+        }), _.property('time')), function (r) {
+            return _.reduce(r.stats, function (sum, x, src) {
+                return sum + (sources.indexOf(src) >= 0 ? x.count : 0);
+            }, 0);
+        });
+
+        return data;
+    }
+
+    function getMonthlyAvailability(){
+        return $.ajax(SERVER_BASE_URL + '/availability/86400s');
+    }
+
+    function getDailyAvailability(date){
+        return $.ajax(SERVER_BASE_URL + '/availability/900s/'+parseInt(date.getTime()/1000)+'/'+(parseInt(date.getTime()/1000)+24*60*60-1));
+    }
 </script>
 </body>
 </html>
