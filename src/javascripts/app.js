@@ -84,22 +84,27 @@ var map = new mapboxgl.Map({
     style: style
 });
 
-
 // disable map rotation using right click + drag
 map.dragRotate.disable();
-``
+
 // disable map rotation using touch rotation gesture
 //    map.touchZoomRotate.disableRotation();
 
 map.addControl(new mapboxgl.Navigation());
 var container = map.getCanvasContainer();
 var svg = d3.select(container).append("svg")
-var transform = d3.geo.transform({point: projectPoint});
-var path = d3.geo.path().projection(transform);
-var plain, sliderIndex = 0;
+// var transform = d3.geo.transform({point: projectPoint});
+// var path = d3.geo.path().projection(transform);
+var plain;
 var plainsJSON;
 var plainController = [];
 var currentTimestamp;
+
+var isPlaying = false;
+var startTime = 1469880212; // TODO - get start time from user
+var endTime = 1469886294; // TODO - get end time from user
+var tickNum = 10; // the step lenght of the player
+// var sliderValue = startTime;
 
 var width = 970,
     height = 500,
@@ -110,7 +115,175 @@ var minValue, maxValue, currentValue, targetValue, trailLength = 30, alpha = .25
 var dots = [];
 var formatMinute = d3.format("+.0f");
 
-// initData();
+initPlayer();
+
+function initPlayer() {
+    setCurrentTimestamp(startTime);
+    initData();
+    $('#play-pause').click(function () {
+        if (isPlaying === false) {
+            // playback.start();
+            startPlayback();
+            $('#play-pause-icon').removeClass('fa-play');
+            $('#play-pause-icon').addClass('fa-pause');
+            isPlaying = true;
+        } else {
+            // playback.stop();
+            stopPlayback();
+            $('#play-pause-icon').removeClass('fa-pause');
+            $('#play-pause-icon').addClass('fa-play');
+            isPlaying = false;
+        }
+    });
+
+    $('#cursor-date').html(dateStr(startTime));
+    $('#cursor-time').html(timeStr(startTime));
+
+    $('#time-slider').slider({
+        min: startTime,
+        max: endTime,
+        step: tickNum,
+        value: startTime,
+        slide: function (event, ui) {
+            // sliderValue = ui.value;
+            setSliderMove(ui.value);
+            // playback.setCursor(ui.value); TODO - make a move
+            updateDateUI(ui.value);
+        }
+    });
+
+    // $('#speed-slider').slider({
+    //     min: -9,
+    //     max: 9,
+    //     step: .1,
+    //     value: self._speedToSliderVal(this.playback.getSpeed()),
+    //     orientation: 'vertical',
+    //     slide: function (event, ui) {
+    //         var speed = self._sliderValToSpeed(parseFloat(ui.value));
+    //         playback.setSpeed(speed);
+    //         $('.speed').html(speed).val(speed);
+    //     }
+    // });
+    //
+    // // $('#speed-input').on('keyup', function (e) {
+    //  //     var speed = parseFloat($('#speed-input').val());
+    //  //     if (!speed) return;
+    //  //     playback.setSpeed(speed);
+    //  //     $('#speed-slider').slider('value', speedToSliderVal(speed));
+    //  //     $('#speed-icon-val').html(speed);
+    //  //     if (e.keyCode === 13) {
+    //  //         $('.speed-menu').dropdown('toggle');
+    //  //     }
+    //  // });
+    //  //
+    //  // $('#calendar').datepicker({
+    //  //     changeMonth: true,
+    //  //     changeYear: true,
+    //  //     altField: '#date-input',
+    //  //     altFormat: 'mm/dd/yy',
+    //  //     defaultDate: new Date(playback.getTime()),
+    //  //     onSelect: function (date) {
+    //  //         var date = new Date(date);
+    //  //         var time = $('#timepicker').data('timepicker');
+    //  //         var ts = self._combineDateAndTime(date, time);
+    //  //         playback.setCursor(ts);
+    //  //         $('#time-slider').slider('value', ts);
+    //  //     }
+    //  // });
+    //  //
+    //  // $('#date-input').on('keyup', function (e) {
+    //  //     $('#calendar').datepicker('setDate', $('#date-input').val());
+    //  // });
+    //  //
+    //  // $('.dropdown-menu').on('click', function (e) {
+    //  //     e.stopPropagation();
+    //  // });
+    //  //
+    //  // $('#timepicker').timepicker({
+    //  //     showSeconds: true
+    //  // });
+    //  //
+    //  // $('#timepicker').timepicker('setTime',
+    //  //     new Date(playback.getTime()).toTimeString());
+    //  //
+    //  // $('#timepicker').timepicker().on('changeTime.timepicker', function (e) {
+    //  //     var date = $('#calendar').datepicker('getDate');
+    //  //     var ts = self._combineDateAndTime(date, e.time);
+    //  //     playback.setCursor(ts);
+    //  //     $('#time-slider').slider('value', ts);
+    //  // });
+    //  //
+    //  // $('#load-tracks-btn').on('click', function (e) {
+    //  //     $('#load-tracks-modal').modal();
+    //  // });
+    //  //
+    //  // $('#load-tracks-save').on('click', function (e) {
+    //  //     var file = $('#load-tracks-file').get(0).files[0];
+    //  //     self._loadTracksFromFile(file);
+    //  // });
+
+};
+
+
+function updateDateUI(timestamp) {
+    $('#cursor-date').html(dateStr(timestamp));
+    $('#cursor-time').html(timeStr(timestamp));
+}
+
+function setSliderMove(timestamp) {
+    //var plainController = getPlainController();
+    setCurrentTimestamp(timestamp)
+    updateProjection();
+}
+
+function getNextPos(timestamp, plainTicks){
+    var startPlain = Object.keys(plainTicks)[0];
+    var endPlain = Object.keys(plainTicks)[Object.keys(plainTicks).length - 1];
+
+    if (timestamp > endPlain)
+        timestamp = endPlain;
+    if (timestamp < startPlain)
+        timestamp = startPlain;
+    if(plainTicks[timestamp] == undefined)
+        return plainTicks[getCloseTimestamo(timestamp,plainTicks)];
+    return plainTicks[timestamp];
+}
+
+
+function startPlayback() {
+    console.log("in start playback");
+};
+
+function stopPlayback() {
+    console.log("in stop playback");
+};
+
+
+// TODO - make in seperate class of date utils
+function dateStr(time) {
+    return new Date(time*1000).toDateString();
+}
+
+function timeStr(time) {
+    time = time * 1000;
+    var d = new Date(time);
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var s = d.getSeconds();
+    var tms = time / 1000;
+    var dec = (tms - Math.floor(tms)).toFixed(2).slice(1);
+    var mer = 'AM';
+    if (h > 11) {
+        h %= 12;
+        mer = 'PM';
+    }
+    if (h === 0) h = 12;
+    if (m < 10) m = '0' + m;
+    if (s < 10) s = '0' + s;
+    return h + ':' + m + ':' + s + dec + ' ' + mer;
+}
+
+
 
 function setCurrentTimestamp(time) {
     currentTimestamp = time;
@@ -162,15 +335,15 @@ function selectPlain(id) {
 
 // TODO - need to be in service
 function initData() {
-    $.getJSON("data/initial/1468634054", function(result){
+    $.getJSON("data/initial/" + currentTimestamp, function(result){
         plainsJSON = result;
-        initlize();
         initTicks();
+        initlize();
     });
 }
 
 function updateData() {
-    $.getJSON("data/initial/1468634054", function(result){
+    $.getJSON("data/initial/" + currentTimestamp, function(result){
         plainsJSON = result;
     });
 }
@@ -190,7 +363,6 @@ function initTicks(){
         });
         plainController[plainItem.id] = ticks;
     });
-
 };
 
 
@@ -203,8 +375,19 @@ map.on("load", function () {
 });
 
 map.on("render", function () {
+    console.log("in render");
     updateProjection();
 });
+
+// re-render our visualization whenever the view changes
+map.on("viewreset", function() {
+    console.log("in viewreset");
+    updateProjection();
+})
+map.on("move", function() {
+    console.log("in move");
+    updateProjection();
+})
 
 function updateProjection() {
 
@@ -222,12 +405,20 @@ function updateProjection() {
             // var loc = [d.path.coordinates[sliderIndex][0], d.path.coordinates[sliderIndex][1]];
             if (loc == undefined)
                 loc = plainController[d.id][getCloseTimestamo(currentTimestamp,plainController[d.id])];
-            pos = map.project(loc);
-            return "translate(" + pos.x + "," + pos.y + ")";
+            // pos = map.project(loc);
+            var pos = mapboxProjection(loc);
+            return "translate(" + pos[0] + "," + pos[1] + ")";
         });
     }
+};
+
+// we can project a lonlat coordinate pair using mapbox's built in projection function
+function mapboxProjection(lonlat) {
+    var p = map.project(new mapboxgl.LngLat(lonlat[0], lonlat[1]))
+    return [p.x, p.y];
 }
-;
+
+
 
 function sliderChanged(sliderIndex) {
     console.log(sliderIndex);
@@ -245,46 +436,46 @@ function sliderChanged(sliderIndex) {
 
 function movePlain(id, newLoc) {
 
-    pos = map.project(newLoc);
+    pos = mapboxProjection(newLoc);
     svg.select(".g-plain-" + id).selectAll("path")
-        .attr("transform", "translate(" + pos.x + "," + pos.y + ") scale(0.4)");
+        .attr("transform", "translate(" + pos[0] + "," + pos[1] + ") scale(0.4)");
 }
 
 
-function update(rand) {
-    for (var i = 0; i < dots.length; i++) {
-        var loc = dots[i].loc;
-
-        if (rand) {
-            var now = Date.now();
-
-            dots[i].loc = loc = turf.destination(turf.point(loc), dots[i].speed * SPEED_FACTOR * (now - dots[i].lastUpdate) / 1000 / 1000, dots[i].angle, 'kilometers').geometry.coordinates;
-            if (loc[0] >= 180 || loc[0] <= -180 || loc[1] >= 90 || loc[1] <= -90) {
-                dots[i].loc = [-180 + Math.random() * 360, -90 + Math.random() * 180];
-                dots[i].angle = -180 + Math.random() * 360;
-                dots[i].speed = 400 + Math.random() * 300;
-            }
-
-            dots[i].lastUpdate = now;
-        }
-
-        var pos = map.project(loc);
-
-        dots[i].dot.attr("transform", "translate(" + pos.x + ',' + pos.y + ") scale(0.3) rotate(" + dots[i].angle + ")");
-    }
-}
+// function update(rand) {
+//     for (var i = 0; i < dots.length; i++) {
+//         var loc = dots[i].loc;
+//
+//         if (rand) {
+//             var now = Date.now();
+//
+//             dots[i].loc = loc = turf.destination(turf.point(loc), dots[i].speed * SPEED_FACTOR * (now - dots[i].lastUpdate) / 1000 / 1000, dots[i].angle, 'kilometers').geometry.coordinates;
+//             if (loc[0] >= 180 || loc[0] <= -180 || loc[1] >= 90 || loc[1] <= -90) {
+//                 dots[i].loc = [-180 + Math.random() * 360, -90 + Math.random() * 180];
+//                 dots[i].angle = -180 + Math.random() * 360;
+//                 dots[i].speed = 400 + Math.random() * 300;
+//             }
+//
+//             dots[i].lastUpdate = now;
+//         }
+//
+//         var pos = map.project(loc);
+//
+//         dots[i].dot.attr("transform", "translate(" + pos.x + ',' + pos.y + ") scale(0.3) rotate(" + dots[i].angle + ")");
+//     }
+// }
 
 
 //requestAnimationFrame(function(){
 //	update(true);
 //	requestAnimationFrame(arguments.callee);
 //});
-
-function projectPoint(lon, lat) {
-    // TODO - change to mapbox projection
-    var point = projection([lon, lat]);
-    this.stream.point(point.x, point.y);
-}
+//
+// function projectPoint(lon, lat) {
+//     // TODO - change to mapbox projection
+//     var point = projection([lon, lat]);
+//     this.stream.point(point.x, point.y);
+// }
 
 
 function getCloseTimestamo(timestamp, plainTicks) {
