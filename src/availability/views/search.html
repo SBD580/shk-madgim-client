@@ -1,0 +1,58 @@
+<div id="search" ng-controller="SearchController as ctrl">
+    <div class="ui form">
+        <div class="two fields">
+            <div class="field">
+                <label>Start date</label>
+                <div class="ui calendar" id="startDate">
+                    <div class="ui input left icon">
+                        <i class="calendar icon"></i>
+                        <input type="text" placeholder="" ng-model="ctrl.startDate">
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label>End date</label>
+                <div class="ui calendar" id="endDate">
+                    <div class="ui input left icon">
+                        <i class="calendar icon"></i>
+                        <input type="text" placeholder="" ng-model="ctrl.endDate">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="ui primary button" type="submit" ng-click="ctrl.search()">Search</button>
+    </div>
+    <div class="ui divider"></div>
+    <div class="ui grid">
+        <div class="six wide column">
+            <div id="search-map"></div>
+            <h4 class="ui header">{{ctrl.polygon.properties.NAME}}</h4>
+        </div>
+        <div class="ten wide column">
+            <div class="ui inverted dimmer" ng-class="{active:loading}">
+                <div class="ui loader"></div>
+            </div>
+            <table class="ui selectable very basic celled table">
+                <thead>
+                <tr class="center aligned">
+                    <th>Type</th>
+                    <th>Source(s)</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="center aligned" ng-repeat="result in results" ng-class="{active:ctrl.result==result}"
+                    ng-mouseover="ctrl.result=result">
+                    <td>{{result.type}}</td>
+                    <td>{{result.src.join(', ')}}</td>
+                    <td>{{result.startTime.format()}}</td>
+                    <td>{{result.endTime.format()}}</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="ui message" ng-show="results">displaying {{results.length}} results out of {{total}}</div>
+            <div class="ui negative message" ng-show="error">ERROR</div>
+        </div>
+    </div>
+</div>
