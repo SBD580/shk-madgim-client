@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="shk">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="../lib/jquery-3.0.0.min.js"></script>
+    <script src="../lib/lodash.min.js"></script>
+    <script src="../lib/turf.min.js"></script>
+    <script src="../lib/moment.min.js"></script>
+    <script src="../lib/d3.min.js"></script>
+    <script src="../lib/mapbox-gl/mapbox-gl.js"></script>
+
+    <script src="../lib/angular.min.js"></script>
+    <script src="../lib/angular-ui-router.min.js"></script>
+
+    <link rel="stylesheet" href="../lib/cal-heatmap.css"/>
+    <script src="../lib/cal-heatmap.min.js"></script>
+
+    <link rel="stylesheet" href="../lib/semantic-ui/semantic.min.css"/>
+    <script src="../lib/semantic-ui/semantic.min.js"></script>
+    <link rel="stylesheet" href="../lib/semantic-ui/components/calendar.min.css"/>
+    <script src="../lib/semantic-ui/components/calendar.min.js"></script>
+
+    <style>
+        .cal-heatmap-container .subdomain-text {
+            fill: #000;
+        }
+
+        .cal-heatmap-container .r1 + title + .subdomain-text,
+        .cal-heatmap-container .r2 + title + .subdomain-text,
+        .cal-heatmap-container .r3 + title + .subdomain-text,
+        .cal-heatmap-container .r4 + title + .subdomain-text,
+        .cal-heatmap-container .r5 + title + .subdomain-text,
+        .cal-heatmap-container .r6 + title + .subdomain-text {
+            fill: #fff;
+        }
+
+        #search-map {
+            height: 400px;
+        }
+
+        #availability-daily .graph-subdomain-group g:not(:nth-child(15n+1)) {
+            display: none;
+        }
+
+        #availability-daily .cal-heatmap-container {
+            height: 50px;
+        }
+
+        .cal-heatmap-container rect.highlight {
+            stroke: red !important;
+            stroke-width: 1px;
+        }
+
+        .cal-heatmap-container text.highlight {
+            fill: red !important;
+        }
+    </style>
+    <script src="js/app.js"></script>
+</head>
+<body>
+<div class="ui hidden divider"></div>
+<div class="ui container">
+    <div class="ui pointing secondary menu" id="tabs">
+        <a class="item" ui-sref="availability" ng-class="{active:$state.current.name=='availability'}">Availability</a>
+        <a class="item" ui-sref="search" ng-class="{active:$state.current.name=='search'}">Search</a>
+    </div>
+    <div class="ui tab fluid active container" ui-view></div>
+</div>
+</body>
+</html>
