@@ -99,12 +99,15 @@ var plainGroup;
 var plainsJSON;
 var plainController = [];
 var currentTimestamp;
-
+var interval;
 var isPlaying = false;
-var startTime = 1469880212; // TODO - get start time from user
-var endTime = 1469886294; // TODO - get end time from user
-var tickNum = 10; // the step lenght of the player
-// var sliderValue = startTime;
+var minSliderValue = 1469880212; // TODO - get start time from user
+var maxSliderValue = 1469886294; // TODO - get end time from user
+var stepSize = 10; // the step lenght of the player
+var SPEED = 100;
+var currentSpeed; // current speen value
+var speedStepsSize; // time spep by current speed
+// var sliderValue = minSliderValue;
 
 var width = 970,
     height = 500,
@@ -118,36 +121,26 @@ var formatMinute = d3.format("+.0f");
 initPlayer();
 
 function initPlayer() {
-    setCurrentTimestamp(startTime);
+    setCurrentTimestamp(minSliderValue);
     initData();
     $('#play-pause').click(function () {
         if (isPlaying === false) {
-            // playback.start();
             startPlayback();
-            $('#play-pause-icon').removeClass('fa-play');
-            $('#play-pause-icon').addClass('fa-pause');
-            isPlaying = true;
         } else {
-            // playback.stop();
             stopPlayback();
-            $('#play-pause-icon').removeClass('fa-pause');
-            $('#play-pause-icon').addClass('fa-play');
-            isPlaying = false;
         }
     });
 
-    $('#cursor-date').html(dateStr(startTime));
-    $('#cursor-time').html(timeStr(startTime));
+    $('#cursor-date').html(dateStr(minSliderValue));
+    $('#cursor-time').html(timeStr(minSliderValue));
 
     $('#time-slider').slider({
-        min: startTime,
-        max: endTime,
-        step: tickNum,
-        value: startTime,
+        min: minSliderValue,
+        max: maxSliderValue,
+        step: stepSize,
+        value: minSliderValue,
         slide: function (event, ui) {
-            // sliderValue = ui.value;
             setSliderMove(ui.value);
-            // playback.setCursor(ui.value); TODO - make a move
             updateDateUI(ui.value);
         },
         stop: function (event, ui) {
@@ -156,77 +149,101 @@ function initPlayer() {
         }
     });
 
-    // $('#speed-slider').slider({
-    //     min: -9,
-    //     max: 9,
-    //     step: .1,
-    //     value: self._speedToSliderVal(this.playback.getSpeed()),
-    //     orientation: 'vertical',
-    //     slide: function (event, ui) {
-    //         var speed = self._sliderValToSpeed(parseFloat(ui.value));
-    //         playback.setSpeed(speed);
-    //         $('.speed').html(speed).val(speed);
-    //     }
+    $('#speed-slider').slider({
+        min: -9,
+        max: 9,
+        step: .1,
+        value: speedToSliderVal(getSpeed()),
+        orientation: 'vertical',
+        slide: function (event, ui) {
+            var speed = sliderToSpeedVal(parseFloat(ui.value));
+            setSpeed(speed);
+            $('.speed').html(speed).val(speed);
+        }
+    });
+
+    $('#speed-input').on('keyup', function (e) {
+        var speed = parseFloat($('#speed-input').val());
+        if (!speed) return;
+        setSpeed(speed);
+        $('#speed-slider').slider('value', speedToSliderVal(speed));
+        $('#speed-icon-val').html(speed);
+        if (e.keyCode === 13) {
+            $('.speed-menu').dropdown('toggle');
+        }
+    });
+
+    $('#calendar').datepicker({
+        changeMonth: true,
+        changeYear: true,
+        altField: '#date-input',
+        altFormat: 'mm/dd/yy',
+        defaultDate: new Date(currentTimestamp),
+        onSelect: function (date) {
+            var date = new Date(date);
+            var time = $('#timepicker').data('timepicker');
+            var ts = combineDateAndTime(date, time);
+            setSliderMove(ts);
+            $('#time-slider').slider('value', ts);
+        }
+    });
+
+    $('#date-input').on('keyup', function (e) {
+        $('#calendar').datepicker('setDate', $('#date-input').val());
+    });
+
+    $('.dropdown-menu').on('click', function (e) {
+        e.stopPropagation();
+    });
+
+    // $('#timepicker').timepicker({
+    //     showSeconds: true
     // });
     //
-    // // $('#speed-input').on('keyup', function (e) {
-    //  //     var speed = parseFloat($('#speed-input').val());
-    //  //     if (!speed) return;
-    //  //     playback.setSpeed(speed);
-    //  //     $('#speed-slider').slider('value', speedToSliderVal(speed));
-    //  //     $('#speed-icon-val').html(speed);
-    //  //     if (e.keyCode === 13) {
-    //  //         $('.speed-menu').dropdown('toggle');
-    //  //     }
-    //  // });
-    //  //
-    //  // $('#calendar').datepicker({
-    //  //     changeMonth: true,
-    //  //     changeYear: true,
-    //  //     altField: '#date-input',
-    //  //     altFormat: 'mm/dd/yy',
-    //  //     defaultDate: new Date(playback.getTime()),
-    //  //     onSelect: function (date) {
-    //  //         var date = new Date(date);
-    //  //         var time = $('#timepicker').data('timepicker');
-    //  //         var ts = self._combineDateAndTime(date, time);
-    //  //         playback.setCursor(ts);
-    //  //         $('#time-slider').slider('value', ts);
-    //  //     }
-    //  // });
-    //  //
-    //  // $('#date-input').on('keyup', function (e) {
-    //  //     $('#calendar').datepicker('setDate', $('#date-input').val());
-    //  // });
-    //  //
-    //  // $('.dropdown-menu').on('click', function (e) {
-    //  //     e.stopPropagation();
-    //  // });
-    //  //
-    //  // $('#timepicker').timepicker({
-    //  //     showSeconds: true
-    //  // });
-    //  //
-    //  // $('#timepicker').timepicker('setTime',
-    //  //     new Date(playback.getTime()).toTimeString());
-    //  //
-    //  // $('#timepicker').timepicker().on('changeTime.timepicker', function (e) {
-    //  //     var date = $('#calendar').datepicker('getDate');
-    //  //     var ts = self._combineDateAndTime(date, e.time);
-    //  //     playback.setCursor(ts);
-    //  //     $('#time-slider').slider('value', ts);
-    //  // });
-    //  //
-    //  // $('#load-tracks-btn').on('click', function (e) {
-    //  //     $('#load-tracks-modal').modal();
-    //  // });
-    //  //
-    //  // $('#load-tracks-save').on('click', function (e) {
-    //  //     var file = $('#load-tracks-file').get(0).files[0];
-    //  //     self._loadTracksFromFile(file);
-    //  // });
+    // $('#timepicker').timepicker('setTime',
+    //     new Date(currentTimestamp).toTimeString());
+    //
+    // $('#timepicker').timepicker().on('changeTime.timepicker', function (e) {
+    //     var date = $('#calendar').datepicker('getDate');
+    //     var ts = combineDateAndTime(date, e.time);
+    //     setSliderMove(ts);
+    //     $('#time-slider').slider('value', ts);
+    // });
+    //
+    // $('#load-tracks-btn').on('click', function (e) {
+    //     $('#load-tracks-modal').modal();
+    // });
+    //
+    // $('#load-tracks-save').on('click', function (e) {
+    //     var file = $('#load-tracks-file').get(0).files[0];
+    //     self._loadTracksFromFile(file);
+    // });
 
 };
+
+function setSpeed(speed) {
+    currentSpeed = speed;
+    speedStepsSize = stepSize / speed;
+    if (interval) {
+        // TODO - is needed ?
+        stopPlayback();
+        startPlayback();
+    }
+}
+
+function getSpeed(speed) {
+    return currentSpeed;
+}
+
+function sliderToSpeedVal(value) {
+    if (val < 0) return parseFloat((1 + val / 10).toFixed(2));
+    return val + 1;
+}
+
+function speedToSliderVal(speed) {
+    if (speed < 1) return -10 + speed * 10;
+    return speed - 1;
+}
 
 function updateDateUI(timestamp) {
     $('#cursor-date').html(dateStr(timestamp));
@@ -252,13 +269,36 @@ function getNextPos(timestamp, plainTicks) {
     return plainTicks[timestamp];
 }
 
+function intervalMove() {
+    if (currentTimestamp + SPEED < maxSliderValue) {
+        setCurrentTimestamp(currentTimestamp + SPEED);
+    }
+    else {
+        setCurrentTimestamp(maxSliderValue)
+        stopPlayback();
+    }
+    updateDateUI(currentTimestamp);
+    $('#time-slider').slider("option", "value", currentTimestamp);
+    updateProjection();
+}
 
 function startPlayback() {
     console.log("in start playback");
+    $('#play-pause-icon').removeClass('fa-play');
+    $('#play-pause-icon').addClass('fa-pause');
+    isPlaying = true;
+    if (interval) return;
+    interval = window.setInterval(intervalMove, 250);
 };
 
 function stopPlayback() {
     console.log("in stop playback");
+    $('#play-pause-icon').removeClass('fa-pause');
+    $('#play-pause-icon').addClass('fa-play');
+    isPlaying = false;
+    if (!interval) return;
+    clearInterval(interval);
+    interval = null;
 };
 
 
@@ -287,6 +327,18 @@ function timeStr(time) {
 }
 
 
+function combineDateAndTime(date, time) {
+    var yr = date.getFullYear();
+    var mo = date.getMonth();
+    var dy = date.getDate();
+    // the calendar uses hour and the timepicker uses hours...
+    var hr = time.hours || time.hour;
+    if (time.meridian === 'PM' && hr !== 12) hr += 12;
+    var min = time.minutes || time.minute;
+    var sec = time.seconds || time.second;
+    return new Date(yr, mo, dy, hr, min, sec).getTime();
+}
+
 function setCurrentTimestamp(time) {
     currentTimestamp = time;
 }
@@ -303,13 +355,13 @@ function updateD3() {
 
     plainGroup.enter().append("g")
         .attr("class", function (plainItem) {
-            var ticks = [];
-            plainItem.path.coordinates.forEach(function (coordinateItem, j) {
-                // map between the timestamp to its coordinates TODO - add spped and angle
-                ticks[coordinateItem[3]] = [coordinateItem[0], coordinateItem[1]];
-            });
-            // TODO - need that d3 be synced with plainController - right now plain controller not remove the old plains
-            plainController[plainItem.id] = ticks;
+            // var ticks = [];
+            // plainItem.path.coordinates.forEach(function (coordinateItem, j) {
+            //     // map between the timestamp to its coordinates TODO - add spped and angle
+            //     ticks[coordinateItem[3]] = [coordinateItem[0], coordinateItem[1]];
+            // });
+            // // TODO - need that d3 be synced with plainController - right now plain controller not remove the old plains
+            // plainController[plainItem.id] = ticks;
             return "g-plainGroup g-pcmlain-" + plainItem.id;
         }).on("click", onClick)
 
@@ -347,7 +399,7 @@ function selectPlain(id) {
 function initData() {
     $.getJSON("data/initial/" + currentTimestamp, function (result) {
         plainsJSON = result;
-        // initTicks();
+        initTicks();
         initlize();
     });
 }
@@ -355,6 +407,7 @@ function initData() {
 function updateData() {
     $.getJSON("data/initial/" + currentTimestamp, function (result) {
         plainsJSON = result;
+        initTicks();
         updateD3();
         updateProjection();
         // updateD3();
@@ -367,6 +420,7 @@ function getPlainController() {
 
 function initTicks() {
 
+    plainController = [];
     plainsJSON.items.forEach(function (plainItem, i) {
 
         var ticks = [];
@@ -412,18 +466,19 @@ function updateProjection() {
                 }).attr('fill', PLAIN_COLOR).attr("transform", "scale(0.4)");
             }
 
-
-            if(plainController[d.id] == undefined){
-                console.log("plainController is null " + d.id);
-return;}
-            else {
-                var loc = plainController[d.id][currentTimestamp];
+//
+//             if(plainController[d.id] == undefined){
+//                 console.log("plainController is null " + d.id);
+// return;}
+//             else {
+            var loc = plainController[d.id][currentTimestamp];
 
             // var loc = [d.path.coordinates[sliderIndex][0], d.path.coordinates[sliderIndex][1]];
             if (loc == undefined)
                 loc = plainController[d.id][getCloseTimestamo(currentTimestamp, plainController[d.id])];
             // pos = map.project(loc);
-            var pos = mapboxProjection(loc);}
+            var pos = mapboxProjection(loc);
+            // }
             return "translate(" + pos[0] + "," + pos[1] + ")";
         });
     }
@@ -436,22 +491,7 @@ function mapboxProjection(lonlat) {
 }
 
 
-function sliderChanged(sliderIndex) {
-    console.log(sliderIndex);
-    plainGroup.attr("transform", function (d) {
-        // in case the plainGroup path is over
-        if (d.path.coordinates.length <= sliderIndex) {
-            // TODO - remove d.id from data
-            return;
-        }
-        var loc = [d.path.coordinates[sliderIndex][0], d.path.coordinates[sliderIndex][1]];
-        pos = map.project(loc);
-        return "translate(" + pos.x + "," + pos.y + ")";
-    });
-}
-
 function movePlain(id, newLoc) {
-
     pos = mapboxProjection(newLoc);
     svg.select(".g-plainGroup-" + id).selectAll("path")
         .attr("transform", "translate(" + pos[0] + "," + pos[1] + ") scale(0.4)");
