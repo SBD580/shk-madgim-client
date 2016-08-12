@@ -147,7 +147,6 @@ app.controller('SearchController', function ($scope, $timeout, $http, config, $s
 
     $timeout(function () {
         $('#startDate').calendar({
-            type: 'date',
             endCalendar: $('#enddate'),
             parser: {
                 date: function(text){
@@ -161,7 +160,6 @@ app.controller('SearchController', function ($scope, $timeout, $http, config, $s
             }
         });
         $('#endDate').calendar({
-            type: 'date',
             startCalendar: $('#startDate'),
             parser: {
                 date: function(text){
