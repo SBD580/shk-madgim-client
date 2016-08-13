@@ -36,7 +36,8 @@
         }
 
         #search-map {
-            height: 400px;
+            height: 100%;
+            min-height: 400px;
         }
 
         #availability-daily .graph-subdomain-group g:not(:nth-child(15n+1)) {
@@ -59,13 +60,6 @@
     <script src="js/app.js"></script>
 </head>
 <body>
-<div class="ui hidden divider"></div>
-<div class="ui container">
-    <div class="ui pointing secondary menu" id="tabs">
-        <a class="item" ui-sref="availability" ng-class="{active:$state.current.name=='availability'}">Availability</a>
-        <a class="item" ui-sref="search" ng-class="{active:$state.current.name=='search'}">Search</a>
-    </div>
-    <div class="ui tab fluid active container" ui-view></div>
-</div>
+<div class="ui fluid basic segment" ui-view></div>
 </body>
 </html>

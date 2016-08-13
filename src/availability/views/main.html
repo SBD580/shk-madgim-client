@@ -1,0 +1,35 @@
+<div class="ui grid">
+    <div class="three wide column" id="sources">
+        <div class="ui fluid mini vertical accordion menu" id="sources">
+            <div class="item" ng-repeat="group in sources">
+                <a class="active title">
+                    <i class="dropdown icon"></i>
+                    <div class="ui checked checkbox">
+                        <input type="checkbox" ng-model="group.selected" ng-change="mctrl.updateByGroup(group)">
+                        <label><b>{{group.name}}</b></label>
+                    </div>
+                </a>
+                <div class="active content">
+                    <div class="ui form">
+                        <div class="grouped fields">
+                            <div class="field" ng-repeat="src in group.items">
+                                <i class="hidden icon"></i>
+                                <div class="ui checkbox">
+                                    <input type="checkbox" ng-model="src.selected" ng-change="mctrl.updateGroupSelection(group)">
+                                    <label>{{src.name}}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="thirteen wide column">
+        <div class="ui pointing secondary menu" id="tabs">
+            <a class="item" ui-sref="availability" ng-class="{active:$state.current.name=='availability'}">Availability</a>
+            <a class="item" ui-sref="search" ng-class="{active:$state.current.name=='search'}">Search</a>
+        </div>
+        <div class="ui tab fluid active container" ui-view></div>
+    </div>
+</div>
