@@ -54,7 +54,6 @@ app.controller('MainController', function ($scope, $timeout, $state, $stateParam
         }]
     }];
     var sourcesParam = $state.params.sources;
-    console.log($stateParams);
     if (sourcesParam) {
         sourcesParam = sourcesParam.split(',');
     }

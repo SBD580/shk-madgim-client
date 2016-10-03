@@ -58,7 +58,7 @@
                 ng-mouseleave="$parent.previewResult=null">
                 <td>{{result.type}}</td>
                 <td>{{result.src.join(', ')}}</td>
-                <td>{{result.startTime.format('DD/MM/Y HH:mm')}}</td>
+                <td><a href="/player/#/?time={{result.startTime.unix()}}">{{result.startTime.format('DD/MM/Y HH:mm')}}</a></td>
                 <td>{{result.endTime.format('DD/MM/Y HH:mm')}}</td>
             </tr>
             </tbody>

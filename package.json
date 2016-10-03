@@ -1,0 +1,29 @@
+{
+  "name": "shk-madgim-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SBD580/shk-madgim-client.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/SBD580/shk-madgim-client/issues"
+  },
+  "homepage": "https://github.com/SBD580/shk-madgim-client#readme",
+  "dependencies": {
+    "angular": "^1.5.8",
+    "angular-ui-router": "^0.3.1",
+    "d3": "^4.2.2",
+    "d3-selection-multi": "^1.0.0",
+    "ion-rangeslider": "^2.1.4",
+    "jquery": "^3.1.0",
+    "lodash": "^4.15.0",
+    "mapbox-gl": "^0.23.0",
+    "moment": "^2.14.1",
+    "turf": "^3.0.14"
+  },
+  "devDependencies": {}
+}
