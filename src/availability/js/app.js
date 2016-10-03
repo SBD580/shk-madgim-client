@@ -139,7 +139,7 @@ app.controller('AvailabilityController', function ($scope, $timeout, config, $st
             cellSize: 30,
             subDomainTextFormat: "%d",
             range: 4,
-            start: new Date(new Date().getFullYear(), 4, 1),
+            start: new Date(new Date().getFullYear(), 6, 1),
             rowLimit: 6,
             domainMargin: 0,
             domainGutter: 30,
