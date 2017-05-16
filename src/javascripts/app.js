@@ -475,7 +475,7 @@ function updateProjection() {
 
             // var loc = [d.path.coordinates[sliderIndex][0], d.path.coordinates[sliderIndex][1]];
             if (loc == undefined)
-                loc = plainController[d.id][getCloseTimestamo(currentTimestamp, plainController[d.id])];
+                loc = plainController[d.id][getCloseTimestamp(currentTimestamp, plainController[d.id])];
             // pos = map.project(loc);
             var pos = mapboxProjection(loc);
             // }
@@ -534,7 +534,7 @@ function movePlain(id, newLoc) {
 // }
 
 
-function getCloseTimestamo(timestamp, plainTicks) {
+function getCloseTimestamp(timestamp, plainTicks) {
     // for (first in obj) break;
     var curr = Object.keys(plainTicks)[0];
     for (currTime in plainTicks) {
